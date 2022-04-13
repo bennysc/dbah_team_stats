@@ -6,7 +6,7 @@ app = Flask(__name__)
 def home_page():
     return 'dbah stats api home page'
 
-@app.route('/refresh_stats')
-async def refresh_stats():
+@app.route('/queue_stats_refresh')
+async def queue_stats_refresh():
     await refresh_stats.refresh_stats()
     return "stats refresh queued"
