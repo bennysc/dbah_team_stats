@@ -21,9 +21,6 @@ headers = {
 }
 
 
-spaces_key = print(os.environ.get('SPACES_KEY'))
-spaces_secret = print(os.environ.get('SPACES_SECRET'))
-
 
 
 
@@ -44,7 +41,6 @@ def get_summoner_games(summoner_id):
     }
     r = requests.get(
         f'https://na.op.gg/api/games/na/summoners/{summoner_id}', headers=headers, params=params)
-    print(r.text)
     games = r.json()
     return games['data']
 
@@ -81,6 +77,7 @@ def parse_games(games):
     df = pd.DataFrame(games).explode(['participants']).reset_index(drop=True)
 
     df = df.join(pd.json_normalize(df['participants']))
+    champions = get_champions()
     champion_df = pd.DataFrame(champions)
     champion_df.columns = ['champion_'+str(x) for x in champion_df.columns]
 
@@ -106,7 +103,6 @@ def refresh_stats():
     recs = []
     for name in dbah_team:
         s = get_summoner_info(name)
-        print(s)
         games = get_summoner_games(s['summoner_id'])
         if len(games) > 0:
             tdf = parse_games(games)
@@ -134,7 +130,7 @@ def refresh_stats():
                 aws_secret_access_key=spaces_secret)
 
     client.put_object(Bucket='league-stats',
-                  Key='dba_stats_latest.csv',
+                  Key='dbah_stats.csv',
                   Body=unique.to_csv(index=False),
                   ACL='public-read'
                 )
