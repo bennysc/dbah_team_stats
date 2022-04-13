@@ -3,6 +3,13 @@ import requests
 import pandas as pd
 import boto3
 import os
+import logging
+
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+
+spaces_key = os.environ.get('SPACES_KEY')
+spaces_secret = os.environ.get('SPACES_SECRET')
+
 
 headers = {
     'authority': 'na.op.gg',
@@ -25,6 +32,7 @@ headers = {
 
 
 def get_summoner_info(name):
+    print(f'Getting summoner info for {name}')
     url = f'https://na.op.gg/api/summoners/na/autocomplete?keyword={name}'
     r = requests.get(url, headers=headers)
     results = r.json()
@@ -46,6 +54,7 @@ def get_summoner_games(summoner_id):
 
 
 def get_champions():
+    print('Getting champions...')
     r = requests.get(
         'https://na.op.gg/api/meta/champions?hl=en_US', headers=headers)
     champions = r.json()
@@ -54,7 +63,6 @@ def get_champions():
 
 dbah_team = ['cllassy66', 'joeybagadonitz', 'raythar', 'masterbait69', 'cantonesports', 'ewxipqy', 'codybarrese', 'jewflayer',
              'snakebae', 'dbahdaspooper', 'callmédad', 'winters', 'vulcan101', 'calvinious', 'shebbles', 'braveclue', 'snivel100', 'beastops331', '100moe']
-
 
 def num_dbah_players(names):
     names_list = [x.lower() for x in list(names)]
@@ -104,7 +112,10 @@ def refresh_stats():
     for name in dbah_team:
         s = get_summoner_info(name)
         games = get_summoner_games(s['summoner_id'])
+        
         if len(games) > 0:
+            num_games = len(games)
+            print(f'{num_games} games retrieved for {name}')
             tdf = parse_games(games)
             recs.append(tdf)
 
@@ -118,10 +129,18 @@ def refresh_stats():
                                  'stats.total_damage_taken': 'damage_taken', 'stats.ward_place': 'wards', 'stats.minion_kill': 'cs', 'stats.gold_earned': 'gold', 'game_length_minute': 'minutes', 'champion_name': 'champion', 'stats.op_score': 'op_score', 'stats.result': 'result'})
 
     select_df['unique_id'] = (select_df['date'] + '_' + (select_df['minutes'] - (select_df['minutes'] % 1)).astype(int).astype(str) + '_' + ((select_df['minutes'] % 1) * 60).astype(int).astype(str) + '_' + select_df['result'] + '_' + select_df['name']).str.lower()
+    num_team_games = len(select_df)
 
+    print(f'{num_team_games} additional games retrieved')
+    print('Fetching existing data...')
     existing_data = pd.read_csv('https://league-stats.nyc3.digitaloceanspaces.com/dbah_stats.csv')
+    num_existing_games = len(existing_data)
+    print(f'{num_existing_games} existing games retrieved')
     unique = pd.concat([existing_data,select_df]).groupby(['id','name'],as_index=False).first().sort_values(['date','name'])
+    num_unique_games = len(unique)
+    print(f'{num_unique_games} total unique games')
 
+    print('Updating data')
     session = boto3.session.Session()
     client = session.client('s3',
                 region_name='nyc3',
