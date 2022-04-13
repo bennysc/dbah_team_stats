@@ -1,8 +1,0 @@
-spec:
-  name: dbah-stats
-  services:
-  - environment_slug: python
-    git:
-      branch: main
-      repo_clone_url: https://github.com/bennysc/dbah_team_stats.git
-    name: dbah-stats

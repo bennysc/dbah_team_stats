@@ -1,8 +1,0 @@
-name: dbah-stats
-services:
-- environment_slug: python
-  github:
-    branch: main
-    deploy_on_push: true
-    repo: bennysc/dbah_team_stats
-  name: dbah-stats
